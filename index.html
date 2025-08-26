@@ -2,138 +2,134 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spin & Reveal</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      background: #e9edf5;
+      background: #e9eef5;
+      margin: 0;
+      padding: 0;
     }
-    h1 { margin-top: 20px; }
 
-    .arrow {
-      width: 0; 
-      height: 0; 
-      border-left: 20px solid transparent;
-      border-right: 20px solid transparent;
-      border-top: 30px solid red; /* pointing down */
+    h1 {
+      margin: 15px 0;
+      font-size: clamp(20px, 5vw, 28px);
+    }
+
+    canvas {
+      display: block;
       margin: 0 auto;
+      max-width: 90vw;
+      height: auto;
     }
 
-    .wheel-container {
-      position: relative;
-      margin: 30px auto;
-      width: 320px;
-      height: 320px;
-      border-radius: 50%;
-      border: 8px solid #333;
-      overflow: hidden;
-    }
-
-    .wheel {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      transition: transform 4s cubic-bezier(0.33, 1, 0.68, 1);
-      position: relative;
-    }
-
-    .label {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform-origin: center left;
-      font-size: 14px;
-      font-weight: bold;
-      color: #fff;
-      text-shadow: 1px 1px 3px black;
+    #arrow {
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 25px solid red;
+      margin: 0 auto 10px;
     }
 
     button {
-      padding: 10px 20px;
-      font-size: 18px;
-      margin-top: 20px;
-      cursor: pointer;
-      border: none;
+      padding: 12px 24px;
+      font-size: clamp(14px, 4vw, 18px);
       background: #007bff;
       color: white;
-      border-radius: 8px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 15px;
     }
 
-    img {
+    button:active {
+      background: #0056b3;
+    }
+
+    #result {
       margin-top: 20px;
-      width: 250px;
-      height: 250px;
-      object-fit: cover;
+      font-size: clamp(16px, 5vw, 22px);
+      font-weight: bold;
+    }
+
+    #result img {
+      margin-top: 10px;
+      max-width: 70vw;
+      height: auto;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
   </style>
 </head>
 <body>
-
   <h1>🎡 Spin & Reveal</h1>
-  <div class="arrow"></div>
-  <div class="wheel-container">
-    <div id="wheel" class="wheel"></div>
-  </div>
-  <button onclick="spin()">Spin the Wheel</button>
-  
+  <div id="arrow"></div>
+  <canvas id="wheel" width="300" height="300"></canvas>
+  <button onclick="spinWheel()">Spin the Wheel</button>
   <div id="result"></div>
 
   <script>
-    const players = [
-      { name: "Dev Sir", image: "images/alice.jpg", color: "#e74c3c" },
-      { name: "Shalu", image: "images/bob.jpg", color: "#3498db" },
-      { name: "Viashnavi", image: "images/charlie.jpg", color: "#2ecc71" },
-      { name: "Vishakha", image: "images/david.jpg", color: "#f1c40f" },
-      { name: "Kirti", image: "images/eva.jpg", color: "#9b59b6" },
-      { name: "Harshita", image: "images/frank.jpg", color: "#e67e22" },
+    const names = [
+      { name: "Alice", image: "images/alice.jpg" },
+      { name: "Bob", image: "images/bob.jpg" },
+      { name: "Charlie", image: "images/charlie.jpg" },
+      { name: "David", image: "images/david.jpg" },
+      { name: "Eva", image: "images/eva.jpg" },
+      { name: "Frank", image: "images/frank.jpg" },
+      { name: "Grace", image: "images/grace.jpg" }
     ];
 
     const wheel = document.getElementById("wheel");
-    const angle = 360 / players.length;
+    const ctx = wheel.getContext("2d");
+    let currentAngle = 0;
+    const sliceAngle = (2 * Math.PI) / names.length;
+    const colors = ["#f44336","#2196f3","#4caf50","#ff9800","#9c27b0","#ffc107","#009688"];
 
-    // Build wheel colors
-    let gradientParts = [];
-    players.forEach((p, i) => {
-      gradientParts.push(`${p.color} ${i*angle}deg ${(i+1)*angle}deg`);
-    });
-    wheel.style.background = `conic-gradient(${gradientParts.join(",")})`;
+    function drawWheel() {
+      names.forEach((n, i) => {
+        ctx.beginPath();
+        ctx.moveTo(150, 150);
+        ctx.arc(150, 150, 140, i * sliceAngle, (i + 1) * sliceAngle);
+        ctx.closePath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.stroke();
 
-    // Add labels evenly spaced along edge
-    players.forEach((p, i) => {
-      const label = document.createElement("div");
-      label.className = "label";
-      label.innerText = p.name;
+        ctx.save();
+        ctx.translate(150, 150);
+        ctx.rotate(i * sliceAngle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "white";
+        ctx.font = "bold 14px Arial";
+        ctx.fillText(n.name, 130, 5);
+        ctx.restore();
+      });
+    }
 
-      // rotate out to edge, then counter-rotate text so it stays upright
-      const rotation = i * angle + angle / 2;
-      label.style.transform = `rotate(${rotation}deg) translateX(140px) rotate(-${rotation}deg)`;
-      wheel.appendChild(label);
-    });
+    drawWheel();
 
-    let currentRotation = 0;
-
-    function spin() {
-      const randomIndex = Math.floor(Math.random() * players.length);
-      const extraSpins = 5;
-      const stopAngle = 360 - (randomIndex * angle + angle/2);
-
-      const rotation = extraSpins * 360 + stopAngle;
-      currentRotation += rotation;
-
-      wheel.style.transform = `rotate(${currentRotation}deg)`;
-
-      setTimeout(() => {
-        const chosen = players[randomIndex];
-        document.getElementById("result").innerHTML = `
-          <h2>${chosen.name}!</h2>
-          <img src="${chosen.image}" alt="${chosen.name}">
-        `;
-      }, 4000);
+    function spinWheel() {
+      const spins = Math.floor(Math.random() * 5) + 5;
+      const randomSlice = Math.floor(Math.random() * names.length);
+      const targetAngle = spins * 2 * Math.PI + randomSlice * sliceAngle + sliceAngle / 2;
+      let step = 0;
+      const interval = setInterval(() => {
+        currentAngle += 0.2;
+        wheel.style.transform = `rotate(${currentAngle}rad)`;
+        step += 0.2;
+        if (step >= targetAngle) {
+          clearInterval(interval);
+          const winner = names[randomSlice];
+          document.getElementById("result").innerHTML = `
+            🎉 <strong>${winner.name}!</strong><br>
+            <img src="${winner.image}" alt="${winner.name}">
+          `;
+        }
+      }, 20);
     }
   </script>
-
 </body>
 </html>
